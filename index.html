@@ -112,14 +112,6 @@
         <section id="cube-container">
             <canvas id="rubiksCube"></canvas>
         </section>
-        <section id="hero">
-            <h1>High-Tech Bluetooth Rubik's Cube</h1>
-            <p>Learn to solve the Rubik's Cube with an interactive smart program.</p>
-            <button id="shopNow">Shop Now</button>
-        </section>
-        <section id="cube-container">
-            <canvas id="rubiksCube"></canvas>
-        </section>
         <section id="product-features">
             <div class="feature-box">
                 <h3>Smart Guidance</h3>
@@ -136,6 +128,7 @@
         </section>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const scene = new THREE.Scene();
@@ -143,28 +136,29 @@
             const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("rubiksCube") });
             renderer.setSize(window.innerWidth, 500);
             document.getElementById("cube-container").appendChild(renderer.domElement);
-            
-            const geometry = new THREE.BoxGeometry();
-            const material = new THREE.MeshBasicMaterial({ color: 0xff4500, wireframe: true });
-            const cube = new THREE.Mesh(geometry, material);
-            scene.add(cube);
-            
+
+            const loader = new THREE.GLTFLoader();
+            loader.load('models/scene.gltf', function(gltf) {
+                scene.add(gltf.scene);
+                gltf.scene.position.set(0, 0, 0);
+            }, undefined, function(error) {
+                console.error(error);
+            });
+
             camera.position.z = 5;
-            
+
             function animate() {
                 requestAnimationFrame(animate);
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
                 renderer.render(scene, camera);
             }
-            
+
             animate();
-            
+
             window.addEventListener("mousemove", (event) => {
                 let x = (event.clientX / window.innerWidth) * 2 - 1;
                 let y = -(event.clientY / window.innerHeight) * 2 + 1;
-                cube.rotation.x = y * Math.PI;
-                cube.rotation.y = x * Math.PI;
+                camera.rotation.x = y * Math.PI * 0.1;
+                camera.rotation.y = x * Math.PI * 0.1;
             });
         });
     </script>
