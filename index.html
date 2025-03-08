@@ -95,6 +95,13 @@
             background: #ff6347;
             transform: scale(1.05);
         }
+        #model-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -226,6 +233,22 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (!cube) return;
+            switch (event.key) {
+                case 'x':
+                    modelGroup.rotation.x += Math.PI / 2;
+                    console.log('x');
+                    break;
+                case 'y':
+                    modelGroup.rotation.y += Math.PI / 2;
+                    break;
+                case 'z':
+                    modelGroup.rotation.z += Math.PI / 2;
+                    break;
+            }
         });
     </script>
 </body>
