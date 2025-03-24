@@ -13,7 +13,8 @@
 <body>
     <script>
         let scene, camera, renderer, controls, raycaster, mouse;
-        let cubes = [];
+        let cubes = [], cubeGroup;
+        const cubeSize = 1.1;
 
         function init() {
             scene = new THREE.Scene();
@@ -30,22 +31,19 @@
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
-            const light = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
             scene.add(light);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
 
             createRubiksCube();
             animate();
-
             window.addEventListener('click', onMouseClick);
+            window.addEventListener('resize', onWindowResize);
         }
 
         function createRubiksCube() {
-            const cubeSize = 1.1;
-            
+            cubeGroup = new THREE.Group();
             for (let x = -1; x <= 1; x++) {
                 for (let y = -1; y <= 1; y++) {
                     for (let z = -1; z <= 1; z++) {
@@ -58,14 +56,15 @@
                             new THREE.MeshStandardMaterial({ color: 0xffa500 }), // Front - Orange
                             new THREE.MeshStandardMaterial({ color: 0xffffff })  // Back - White
                         ];
-                        
                         const cube = new THREE.Mesh(geometry, materials);
                         cube.position.set(x * cubeSize, y * cubeSize, z * cubeSize);
-                        scene.add(cube);
+                        cube.userData = { x, y, z };
+                        cubeGroup.add(cube);
                         cubes.push(cube);
                     }
                 }
             }
+            scene.add(cubeGroup);
         }
 
         function onMouseClick(event) {
@@ -81,19 +80,32 @@
         }
 
         function rotateFace(cubelet) {
-            console.log("Rotating face of clicked cube");
-            const rotationAxis = new THREE.Vector3(0, 1, 0);
-            const rotationSpeed = Math.PI / 2; 
-            const selectedCubes = cubes.filter(cube => Math.abs(cube.position.y - cubelet.position.y) < 0.1);
+            let axis, filter;
+            if (Math.abs(cubelet.position.x) > 0.9) {
+                axis = new THREE.Vector3(1, 0, 0);
+                filter = (c) => Math.abs(c.position.x - cubelet.position.x) < 0.1;
+            } else if (Math.abs(cubelet.position.y) > 0.9) {
+                axis = new THREE.Vector3(0, 1, 0);
+                filter = (c) => Math.abs(c.position.y - cubelet.position.y) < 0.1;
+            } else {
+                axis = new THREE.Vector3(0, 0, 1);
+                filter = (c) => Math.abs(c.position.z - cubelet.position.z) < 0.1;
+            }
+            
+            const selectedCubes = cubes.filter(filter);
+            animateRotation(selectedCubes, axis, Math.PI / 2);
+        }
 
+        function animateRotation(selectedCubes, axis, angle) {
+            const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle / 20);
             let step = 0;
             const interval = setInterval(() => {
                 selectedCubes.forEach(cube => {
-                    cube.position.applyAxisAngle(rotationAxis, rotationSpeed / 10);
-                    cube.rotateOnAxis(rotationAxis, rotationSpeed / 10);
+                    cube.applyQuaternion(quaternion);
+                    cube.position.applyAxisAngle(axis, angle / 20);
                 });
                 step++;
-                if (step >= 10) clearInterval(interval);
+                if (step >= 20) clearInterval(interval);
             }, 20);
         }
 
@@ -103,11 +115,11 @@
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
+        function onWindowResize() {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-        });
+        }
 
         init();
     </script>
