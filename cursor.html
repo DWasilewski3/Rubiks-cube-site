@@ -689,6 +689,7 @@
             rotatingCubes.forEach((cubelet, index) => {
                 const materials = cubelet.material;
                 const tempMaterials = tempData[index].materials;
+                const pos = cubelet.position;
 
                 // Update materials based on the face being rotated
                 switch (rotatingFace) {
@@ -749,7 +750,6 @@
                 }
 
                 // Update colors based on final position
-                const pos = cubelet.position;
                 if (Math.abs(pos.x) === 1) {
                     materials[0].color.setHex(pos.x > 0 ? colors.red : colors.orange);
                     materials[1].color.setHex(pos.x < 0 ? colors.orange : colors.red);
