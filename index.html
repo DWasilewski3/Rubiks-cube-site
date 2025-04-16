@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bluetooth Rubik's Cube</title>
     <link rel="stylesheet" href="src/css/styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body {
             margin: 0;
@@ -59,35 +56,6 @@
             filter: blur(50px);
             z-index: -1;
         }
-        #cube-container {
-            width: 100vw;
-            height: 500px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-        #cube-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-        #cube-info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            text-align: left;
-            z-index: 10;
-        }
         #product-features {
             display: flex;
             justify-content: center;
@@ -116,12 +84,23 @@
             background: #ff6347;
             transform: scale(1.05);
         }
-        #model-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #model-preview {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1e1e1e;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(255, 69, 0, 0.3);
+        }
+        #model-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        .model-description {
+            margin-top: 20px;
+            text-align: left;
         }
     </style>
 </head>
@@ -130,7 +109,6 @@
         <nav>
             <ul>
                 <li><a href="./index.html">Home</a></li>
-                <li><a href="./research.html">Products</a></li>
                 <li><a href="./medical-research.html">Medical Research</a></li>
                 <li><a href="./contact.html">Contact</a></li>
             </ul>
@@ -143,30 +121,23 @@
             <button id="shopNow">Shop Now</button>
         </section>
         
-        <section id="cube-container">
-            <div id="cube-info">
-                <h3>Controls:</h3>
+        <section id="model-preview">
+            <h2>Interactive Rubik's Cube</h2>
+            <div class="model-description">
+                <p>Experience our interactive Rubik's Cube with full 3D controls. Rotate faces, scramble the cube, and learn solving techniques.</p>
+                <p>Features:</p>
                 <ul>
-                    <li>Mouse: Rotate view</li>
-                    <li>Scroll: Zoom</li>
-                    <li>Keyboard: Rotate faces
-                        <ul>
-                            <li>W: White face (top)</li>
-                            <li>Y: Yellow face (bottom)</li>
-                            <li>R: Red face (right)</li>
-                            <li>O: Orange face (left)</li>
-                            <li>B: Blue face (front)</li>
-                            <li>G: Green face (back)</li>
-                        </ul>
-                    </li>
+                    <li>Full 3D visualization</li>
+                    <li>Mouse and keyboard controls</li>
+                    <li>Reset and scramble functions</li>
+                    <li>Realistic physics and animations</li>
                 </ul>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.location.href='model.html'">Try Interactive Cube</button>
+                </div>
             </div>
-            <div id="cube-controls">
-                <button onclick="resetCube()">Reset</button>
-                <button onclick="scrambleCube()">Scramble</button>
-            </div>
-            <canvas id="rubiksCube"></canvas>
         </section>
+        
         <section id="product-features">
             <div class="feature-box">
                 <h3>Smart Guidance</h3>
@@ -182,351 +153,12 @@
             </div>
         </section>
     </main>
+    <footer style="background-color: #222; color: white; padding: 20px; text-align: center; margin-top: 40px;">
+        <p>&copy; 2025 DayDream Technologies. All rights reserved.</p>
+    </footer>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Interactive Rubik's Cube
-            (function() {
-                let scene, camera, renderer, controls;
-                let cubelets = [];
-                let isAnimating = false;
-                let currentRotation = 0;
-                let targetRotation = 0;
-                let rotatingFace = null;
-                let rotatingCubes = [];
-                let rotatingAxis = new THREE.Vector3();
-                let rotatingPivot = new THREE.Vector3();
-                const CUBELET_SIZE = 0.95;
-                const ROTATION_SPEED = 0.1;
-                const colors = {
-                    white: 0xffffff,
-                    yellow: 0xffff00,
-                    red: 0xff0000,
-                    orange: 0xffa500,
-                    blue: 0x0000ff,
-                    green: 0x00ff00
-                };
-                let scrambleQueue = [];
-                let isScrambling = false;
-                let moveHistory = [];
-
-                function init() {
-                    scene = new THREE.Scene();
-                    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                    renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("rubiksCube"), antialias: true });
-                    renderer.setSize(window.innerWidth, 500);
-                    
-                    controls = new THREE.OrbitControls(camera, renderer.domElement);
-                    controls.enableDamping = true;
-                    controls.dampingFactor = 0.05;
-
-                    camera.position.z = 5;
-
-                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                    scene.add(ambientLight);
-
-                    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-                    directionalLight1.position.set(5, 5, 5);
-                    scene.add(directionalLight1);
-
-                    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.8);
-                    directionalLight2.position.set(-5, -5, -5);
-                    scene.add(directionalLight2);
-
-                    createCube();
-                    animate();
-                }
-
-                function createCubeletMaterials(x, y, z) {
-                    const materials = [];
-                    for (let i = 0; i < 6; i++) {
-                        let color = 0x000000;
-                        
-                        switch (i) {
-                            case 0:
-                                if (x === 1) color = colors.red;
-                                break;
-                            case 1:
-                                if (x === -1) color = colors.orange;
-                                break;
-                            case 2:
-                                if (y === 1) color = colors.white;
-                                break;
-                            case 3:
-                                if (y === -1) color = colors.yellow;
-                                break;
-                            case 4:
-                                if (z === 1) color = colors.blue;
-                                break;
-                            case 5:
-                                if (z === -1) color = colors.green;
-                                break;
-                        }
-                        
-                        materials.push(new THREE.MeshPhongMaterial({ 
-                            color,
-                            shininess: 0
-                        }));
-                    }
-                    return materials;
-                }
-
-                function createCube() {
-                    const geometry = new THREE.BoxGeometry(CUBELET_SIZE, CUBELET_SIZE, CUBELET_SIZE);
-
-                    for (let x = -1; x <= 1; x++) {
-                        for (let y = -1; y <= 1; y++) {
-                            for (let z = -1; z <= 1; z++) {
-                                const materials = createCubeletMaterials(x, y, z);
-                                const cubelet = new THREE.Mesh(geometry, materials);
-                                cubelet.position.set(x, y, z);
-                                cubelet.userData.originalPosition = { x, y, z };
-                                scene.add(cubelet);
-                                cubelets.push(cubelet);
-                            }
-                        }
-                    }
-                }
-
-                function startRotation(face, angle, isUndo = false) {
-                    if (isAnimating) return;
-                    
-                    isAnimating = true;
-                    currentRotation = 0;
-                    targetRotation = angle;
-                    rotatingFace = face;
-                    rotatingCubes = [];
-
-                    switch (face) {
-                        case 'white':
-                            rotatingAxis.set(0, 1, 0);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.y - 1) < 0.1);
-                            rotatingPivot.set(0, 1, 0);
-                            break;
-                        case 'yellow':
-                            rotatingAxis.set(0, -1, 0);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.y + 1) < 0.1);
-                            rotatingPivot.set(0, -1, 0);
-                            break;
-                        case 'red':
-                            rotatingAxis.set(1, 0, 0);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.x - 1) < 0.1);
-                            rotatingPivot.set(1, 0, 0);
-                            break;
-                        case 'orange':
-                            rotatingAxis.set(-1, 0, 0);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.x + 1) < 0.1);
-                            rotatingPivot.set(-1, 0, 0);
-                            break;
-                        case 'blue':
-                            rotatingAxis.set(0, 0, 1);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.z - 1) < 0.1);
-                            rotatingPivot.set(0, 0, 1);
-                            break;
-                        case 'green':
-                            rotatingAxis.set(0, 0, -1);
-                            rotatingCubes = cubelets.filter(c => Math.abs(c.position.z + 1) < 0.1);
-                            rotatingPivot.set(0, 0, -1);
-                            break;
-                    }
-
-                    if (!isUndo && !isScrambling) {
-                        moveHistory.push({ face, angle });
-                    }
-                }
-
-                function updateRotation() {
-                    if (!isAnimating) return;
-
-                    const step = Math.min(ROTATION_SPEED, targetRotation - currentRotation);
-                    currentRotation += step;
-
-                    rotatingCubes.forEach(cubelet => {
-                        const pos = cubelet.position.clone();
-                        pos.sub(rotatingPivot);
-                        pos.applyAxisAngle(rotatingAxis, step);
-                        pos.add(rotatingPivot);
-                        cubelet.position.copy(pos);
-                    });
-
-                    if (currentRotation >= targetRotation) {
-                        isAnimating = false;
-                        updateMaterials();
-                        
-                        if (isScrambling && scrambleQueue.length > 0) {
-                            const move = scrambleQueue.shift();
-                            startRotation(move.face, move.angle);
-                        } else if (isScrambling) {
-                            isScrambling = false;
-                        }
-                    }
-                }
-
-                function updateMaterials() {
-                    const tempData = rotatingCubes.map(cubelet => ({
-                        position: cubelet.position.clone(),
-                        materials: cubelet.material.map(m => m.clone())
-                    }));
-
-                    rotatingCubes.forEach((cubelet, index) => {
-                        const materials = cubelet.material;
-                        const tempMaterials = tempData[index].materials;
-                        const pos = cubelet.position;
-
-                        switch (rotatingFace) {
-                            case 'white':
-                                materials[0] = tempMaterials[4];
-                                materials[1] = tempMaterials[5];
-                                materials[2] = tempMaterials[2];
-                                materials[3] = tempMaterials[3];
-                                materials[4] = tempMaterials[1];
-                                materials[5] = tempMaterials[0];
-                                break;
-                            case 'yellow':
-                                materials[0] = tempMaterials[5];
-                                materials[1] = tempMaterials[4];
-                                materials[2] = tempMaterials[2];
-                                materials[3] = tempMaterials[3];
-                                materials[4] = tempMaterials[0];
-                                materials[5] = tempMaterials[1];
-                                break;
-                            case 'red':
-                                materials[0] = tempMaterials[0];
-                                materials[1] = tempMaterials[1];
-                                materials[2] = tempMaterials[4];
-                                materials[3] = tempMaterials[5];
-                                materials[4] = tempMaterials[3];
-                                materials[5] = tempMaterials[2];
-                                break;
-                            case 'orange':
-                                materials[0] = tempMaterials[0];
-                                materials[1] = tempMaterials[1];
-                                materials[2] = tempMaterials[5];
-                                materials[3] = tempMaterials[4];
-                                materials[4] = tempMaterials[2];
-                                materials[5] = tempMaterials[3];
-                                break;
-                            case 'blue':
-                                materials[0] = tempMaterials[2];
-                                materials[1] = tempMaterials[3];
-                                materials[2] = tempMaterials[1];
-                                materials[3] = tempMaterials[0];
-                                materials[4] = tempMaterials[4];
-                                materials[5] = tempMaterials[5];
-                                break;
-                            case 'green':
-                                materials[0] = tempMaterials[3];
-                                materials[1] = tempMaterials[2];
-                                materials[2] = tempMaterials[0];
-                                materials[3] = tempMaterials[1];
-                                materials[4] = tempMaterials[4];
-                                materials[5] = tempMaterials[5];
-                                break;
-                        }
-
-                        if (Math.abs(pos.x) === 1) {
-                            materials[0].color.setHex(pos.x > 0 ? colors.red : colors.orange);
-                            materials[1].color.setHex(pos.x < 0 ? colors.orange : colors.red);
-                        }
-                        if (Math.abs(pos.y) === 1) {
-                            materials[2].color.setHex(pos.y > 0 ? colors.white : colors.yellow);
-                            materials[3].color.setHex(pos.y < 0 ? colors.yellow : colors.white);
-                        }
-                        if (Math.abs(pos.z) === 1) {
-                            materials[4].color.setHex(pos.z > 0 ? colors.blue : colors.green);
-                            materials[5].color.setHex(pos.z < 0 ? colors.green : colors.blue);
-                        }
-                    });
-                }
-
-                function resetCube() {
-                    if (isAnimating) return;
-                    
-                    cubelets.forEach(cubelet => {
-                        cubelet.position.set(
-                            cubelet.userData.originalPosition.x,
-                            cubelet.userData.originalPosition.y,
-                            cubelet.userData.originalPosition.z
-                        );
-                        
-                        const materials = cubelet.material;
-                        const x = cubelet.userData.originalPosition.x;
-                        const y = cubelet.userData.originalPosition.y;
-                        const z = cubelet.userData.originalPosition.z;
-                        
-                        materials.forEach(material => {
-                            material.color.setHex(0x000000);
-                        });
-                        
-                        if (x === 1) materials[0].color.setHex(colors.red);
-                        if (x === -1) materials[1].color.setHex(colors.orange);
-                        if (y === 1) materials[2].color.setHex(colors.white);
-                        if (y === -1) materials[3].color.setHex(colors.yellow);
-                        if (z === 1) materials[4].color.setHex(colors.blue);
-                        if (z === -1) materials[5].color.setHex(colors.green);
-                    });
-                    
-                    moveHistory = [];
-                }
-
-                function scrambleCube() {
-                    if (isScrambling) return;
-                    
-                    isScrambling = true;
-                    const faces = ['white', 'yellow', 'red', 'orange', 'blue', 'green'];
-                    const moves = 20;
-                    
-                    moveHistory = [];
-                    
-                    for (let i = 0; i < moves; i++) {
-                        const face = faces[Math.floor(Math.random() * faces.length)];
-                        const angle = Math.PI / 2;
-                        scrambleQueue.push({ face, angle });
-                    }
-                    
-                    if (scrambleQueue.length > 0) {
-                        const move = scrambleQueue.shift();
-                        startRotation(move.face, move.angle);
-                    }
-                }
-
-                function animate() {
-                    requestAnimationFrame(animate);
-                    controls.update();
-                    updateRotation();
-                    renderer.render(scene, camera);
-                }
-
-                window.addEventListener('keydown', (event) => {
-                    if (isAnimating) return;
-                    
-                    switch (event.key.toLowerCase()) {
-                        case 'w':
-                            startRotation('white', Math.PI / 2);
-                            break;
-                        case 'y':
-                            startRotation('yellow', Math.PI / 2);
-                            break;
-                        case 'r':
-                            startRotation('red', Math.PI / 2);
-                            break;
-                        case 'o':
-                            startRotation('orange', Math.PI / 2);
-                            break;
-                        case 'b':
-                            startRotation('blue', Math.PI / 2);
-                            break;
-                        case 'g':
-                            startRotation('green', Math.PI / 2);
-                            break;
-                    }
-                });
-
-                // Make functions available globally
-                window.resetCube = resetCube;
-                window.scrambleCube = scrambleCube;
-
-                init();
-            })();
+        document.getElementById('shopNow').addEventListener('click', function() {
+            window.location.href = 'research.html';
         });
     </script>
 </body>

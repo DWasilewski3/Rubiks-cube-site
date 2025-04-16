@@ -11,6 +11,24 @@
             background-color: #1a1a1a;
             font-family: Arial, sans-serif;
         }
+        #home-button {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+        #home-button:hover {
+            background-color: #ff6347;
+        }
         #info {
             position: absolute;
             top: 10px;
@@ -65,6 +83,7 @@
     </style>
 </head>
 <body>
+    <button id="home-button" onclick="window.location.href='index.html'">Home</button>
     <div id="info">
         Controls:<br>
         Mouse: Rotate view<br>
